@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOT - Table {{ table.table_number }} - Order #{{ order.order_number }}</title>
+    <style>
+        @media print {
+            body { margin: 0; padding: 5px; }
+            .no-print { display: none; }
+            @page { 
+                size: 80mm auto; 
+                margin: 0; 
+            }
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.3;
+            max-width: 80mm;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 5px;
+            color: #000;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .restaurant-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .kot-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-align: center;
+            background: #000;
+            color: #fff;
+            padding: 5px;
+        }
+        
+        .order-info {
+            margin: 10px 0;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 10px;
+        }
+        
+        .order-info div {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+        
+        .items {
+            margin: 10px 0;
+        }
+        
+        .item {
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+        
+        .item-qty {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .item-name {
+            flex: 1;
+            padding: 0 10px;
+        }
+        
+        .special-instructions {
+            font-style: italic;
+            color: #666;
+            margin-top: 3px;
+            padding-left: 20px;
+        }
+        
+        .footer {
+            margin-top: 10px;
+            border-top: 2px dashed #000;
+            padding-top: 10px;
+            text-align: center;
+        }
+        
+        .print-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        
+        .close-button {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .veg-indicator {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .non-veg-indicator {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="restaurant-name">MAI KAI RESTAURANT</div>
+        <div>Hikka, Sri Lanka</div>
+    </div>
+    
+    <div class="kot-title">*** KITCHEN ORDER TICKET ***</div>
+    
+    <div class="order-info">
+        <div>
+            <span><strong>Order No:</strong></span>
+            <span>{{ order.order_number }}</span>
+        </div>
+        <div>
+            <span><strong>Table:</strong></span>
+            <span>{{ table.table_number }}</span>
+        </div>
+        <div>
+            <span><strong>Date/Time:</strong></span>
+            <span>{{ print_time|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div>
+            <span><strong>Server:</strong></span>
+            <span>{{ order.created_by.get_full_name }}</span>
+        </div>
+        <div>
+            <span><strong>Order Type:</strong></span>
+            <span>{{ order.get_order_type_display }}</span>
+        </div>
+    </div>
+    
+    <div class="items">
+        <div style="font-weight: bold; margin-bottom: 10px; text-align: center;">
+            === ORDER ITEMS ===
+        </div>
+        
+        {% for item in order_items %}
+        <div class="item">
+            <div class="item-header">
+                <span class="item-qty">{{ item.quantity }}x</span>
+                <span class="item-name">
+                    {{ item.menu_item.name }}
+                    {% if item.menu_item.is_vegetarian %}
+                    <span class="veg-indicator">[V]</span>
+                    {% else %}
+                    <span class="non-veg-indicator">[NV]</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if item.special_instructions %}
+            <div class="special-instructions">
+                Note: {{ item.special_instructions }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if order.special_instructions %}
+    <div style="margin: 10px 0; padding: 10px; border: 2px solid #000;">
+        <strong>Special Instructions:</strong><br>
+        {{ order.special_instructions }}
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+        <div style="margin: 10px 0;">
+            <strong>Total Items: {{ order_items.count }}</strong>
+        </div>
+        <div style="font-size: 10px; margin-top: 5px;">
+            This is a kitchen copy - Not a bill
+        </div>
+    </div>
+    
+    <div class="button-container no-print">
+        <button class="print-button" onclick="window.print()">🖨️ Print KOT</button>
+        <button class="close-button" onclick="window.close()">✖ Close</button>
+    </div>
+    
+    <script>
+        // Auto-print when page loads for kitchen
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html>

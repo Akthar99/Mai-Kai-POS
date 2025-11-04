@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mai Kai POS{% endblock %}</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- HTMX -->
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
+    
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        }
+        .htmx-request .htmx-indicator {
+            opacity: 1;
+        }
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    {% if user.is_authenticated %}
+    <!-- Navigation -->
+    <nav class="bg-primary text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold">Mai Kai POS</h1>
+                    <div class="hidden md:flex space-x-2">
+                        <!-- Sales Page - All Users -->
+                        <a href="{% url 'core:sales' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition {% if request.path == '/sales/' %}bg-blue-700{% endif %}">
+                            <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Sales
+                        </a>
+                        
+                        <!-- Admin, Manager, and Cashier Links -->
+                        {% if user.role == 'admin' or user.role == 'manager' or user.role == 'cashier' %}
+                        <a href="{% url 'core:dashboard' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition">Dashboard</a>
+                        <a href="{% url 'orders:order_list' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition">Orders</a>
+                        {% endif %}
+                        
+                        <!-- Admin and Manager Only Links -->
+                        {% if user.role == 'admin' or user.role == 'manager' %}
+                        <a href="{% url 'tables:table_list' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition">Tables</a>
+                        <a href="{% url 'menu:menu_list' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition">Menu</a>
+                        <a href="{% url 'customers:customer_list' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition">Customers</a>
+                        <a href="{% url 'reports:reports_home' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition">Reports</a>
+                        {% endif %}
+                        
+                        <!-- Inventory - Admin, Manager, and Cashier -->
+                        {% if user.role == 'admin' or user.role == 'manager' or user.role == 'cashier' %}
+                        <a href="{% url 'inventory:inventory_list' %}" class="px-4 py-2 rounded hover:bg-blue-700 transition">
+                            <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                            Inventory
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm">{{ user.get_full_name }} ({{ user.get_role_display }})</span>
+                    <form method="post" action="{% url 'admin:logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 bg-red-600 rounded hover:bg-red-700 transition">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mx-auto px-4 mt-4">
+        {% for message in messages %}
+        <div class="bg-{{ message.tags }}-100 border-l-4 border-{{ message.tags }}-500 text-{{ message.tags }}-700 p-4 mb-4 rounded" role="alert">
+            <p>{{ message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="htmx-indicator fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-2">
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Loading...</span>
+        </div>
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

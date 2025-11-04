@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Reports - Mai Kai POS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <a href="{% url 'reports:reports_home' %}" class="text-blue-600 hover:underline mb-2 inline-block">&larr; Back to Reports</a>
+            <h1 class="text-3xl font-bold">Inventory Reports</h1>
+        </div>
+        <div class="flex gap-2">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Export PDF
+            </button>
+            <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Export Excel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-600">Total Items</p>
+            <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+        </div>
+        <p class="text-3xl font-bold text-gray-900">{{ total_items }}</p>
+        <p class="text-sm text-gray-600 mt-2">Stock items tracked</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-600">Total Stock Value</p>
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <p class="text-3xl font-bold text-gray-900">Rs.{{ total_value|floatformat:2 }}</p>
+        <p class="text-sm text-gray-600 mt-2">Current inventory value</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-600">Low Stock Items</p>
+            <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+        <p class="text-3xl font-bold text-gray-900">{{ low_stock_count }}</p>
+        <p class="text-sm text-gray-600 mt-2">Need to reorder</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-600">Out of Stock</p>
+            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </div>
+        <p class="text-3xl font-bold text-gray-900">{{ out_of_stock_count }}</p>
+        <p class="text-sm text-gray-600 mt-2">Items out of stock</p>
+    </div>
+</div>
+
+<!-- Current Stock Levels -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-bold mb-4">Current Stock Levels</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-sm font-semibold">Item Name</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold">Category</th>
+                    <th class="px-4 py-3 text-right text-sm font-semibold">Current Qty</th>
+                    <th class="px-4 py-3 text-right text-sm font-semibold">Min Qty</th>
+                    <th class="px-4 py-3 text-right text-sm font-semibold">Unit Price</th>
+                    <th class="px-4 py-3 text-right text-sm font-semibold">Total Value</th>
+                    <th class="px-4 py-3 text-center text-sm font-semibold">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-3">{{ item.name }}</td>
+                    <td class="px-4 py-3">{{ item.category }}</td>
+                    <td class="px-4 py-3 text-right">{{ item.current_quantity }} {{ item.unit }}</td>
+                    <td class="px-4 py-3 text-right">{{ item.min_quantity }} {{ item.unit }}</td>
+                    <td class="px-4 py-3 text-right">Rs.{{ item.unit_cost }}</td>
+                    <td class="px-4 py-3 text-right font-semibold">Rs.{{ item.stock_value|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-center">
+                        {% if item.current_quantity == 0 %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Out of Stock</span>
+                        {% elif item.is_low_stock %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">Low Stock</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">In Stock</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                        No inventory items found. <a href="{% url 'inventory:stock_items' %}" class="text-blue-600 hover:underline">Add items</a> in the Inventory section.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Stock Movement & Alerts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Low Stock Alerts -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center">
+            <svg class="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Low Stock Alerts
+        </h2>
+        <div class="space-y-3">
+            {% for item in low_stock_items %}
+            <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <div>
+                    <p class="font-semibold text-gray-900">{{ item.name }}</p>
+                    <p class="text-sm text-gray-600">Current: {{ item.current_quantity }} {{ item.unit }} / Min: {{ item.min_quantity }} {{ item.unit }}</p>
+                </div>
+                <span class="px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">Low Stock</span>
+            </div>
+            {% empty %}
+            <p class="text-center text-gray-500 py-8">All items are well stocked</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Stock Movements -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center">
+            <svg class="w-6 h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+            </svg>
+            Recent Stock Movements
+        </h2>
+        <div class="space-y-3">
+            {% for movement in recent_movements %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-900">{{ movement.stock_item.name }}</p>
+                    <p class="text-sm text-gray-600">{{ movement.get_movement_type_display }} - {{ movement.quantity }} {{ movement.stock_item.unit }}</p>
+                    <p class="text-xs text-gray-500">{{ movement.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                    {% if movement.movement_type == 'purchase' %}bg-green-100 text-green-800
+                    {% elif movement.movement_type == 'sale' %}bg-blue-100 text-blue-800
+                    {% elif movement.movement_type == 'waste' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ movement.get_movement_type_display }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-center text-gray-500 py-8">No recent stock movements</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Stock by Category -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-bold mb-4">Stock by Category</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for category, data in categories.items %}
+        <div class="bg-gray-50 p-4 rounded-lg text-center">
+            <p class="text-gray-600 text-sm mb-2">{{ category }}</p>
+            <p class="text-2xl font-bold">{{ data.count }}</p>
+            <p class="text-sm text-gray-500 mt-1">items</p>
+            <p class="text-sm text-green-600 font-semibold mt-2">Rs.{{ data.value|floatformat:2 }}</p>
+        </div>
+        {% empty %}
+        <div class="col-span-3 text-center text-gray-500 py-4">
+            No categories found
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Purchase Orders Summary -->
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold mb-4">Recent Purchase Orders</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-sm font-semibold">PO Number</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold">Supplier</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                    <th class="px-4 py-3 text-right text-sm font-semibold">Amount</th>
+                    <th class="px-4 py-3 text-center text-sm font-semibold">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for po in recent_pos %}
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium">{{ po.po_number }}</td>
+                    <td class="px-4 py-3">{{ po.vendor.name }}</td>
+                    <td class="px-4 py-3">{{ po.order_date|date:"M d, Y" }}</td>
+                    <td class="px-4 py-3 text-right font-semibold">Rs.{{ po.total_amount|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full
+                            {% if po.status == 'draft' %}bg-gray-100 text-gray-800
+                            {% elif po.status == 'sent' %}bg-blue-100 text-blue-800
+                            {% elif po.status == 'received' %}bg-green-100 text-green-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ po.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                        No purchase orders found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Info Box -->
+<div class="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+    <div class="flex items-start">
+        <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+            <p class="font-semibold text-blue-900">Inventory Management</p>
+            <p class="text-sm text-blue-800 mt-1">
+                To add inventory items, go to <a href="{% url 'inventory:stock_items' %}" class="underline font-semibold">Inventory → Stock Items</a>. 
+                Track stock levels, set reorder points, and manage purchase orders to keep your restaurant running smoothly.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

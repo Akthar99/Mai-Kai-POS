@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Stock Alerts - Mai Kai POS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Stock Alerts</h1>
+            <p class="text-gray-600 mt-1">Monitor low stock and critical inventory levels</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'inventory:inventory_list' %}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Inventory
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100 text-sm font-medium">Out of Stock</p>
+                    <p class="text-4xl font-bold mt-2">{{ out_of_stock_items|length }}</p>
+                    <p class="text-red-100 text-xs mt-1">Critical - Immediate action required</p>
+                </div>
+                <svg class="w-16 h-16 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm font-medium">Low Stock</p>
+                    <p class="text-4xl font-bold mt-2">{{ low_stock_items|length }}</p>
+                    <p class="text-orange-100 text-xs mt-1">Below minimum threshold</p>
+                </div>
+                <svg class="w-16 h-16 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium">Active Alerts</p>
+                    <p class="text-4xl font-bold mt-2">{{ alerts.count }}</p>
+                    <p class="text-blue-100 text-xs mt-1">Unresolved notifications</p>
+                </div>
+                <svg class="w-16 h-16 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Out of Stock Items -->
+    {% if out_of_stock_items %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-red-500">
+        <h2 class="text-xl font-bold text-red-600 mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Critical: Out of Stock Items
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for item in out_of_stock_items %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-900">{{ item.name }}</h3>
+                        <p class="text-sm text-gray-600">SKU: {{ item.sku }}</p>
+                        <p class="text-sm text-gray-600">Category: {{ item.category }}</p>
+                        <p class="text-sm text-red-600 font-semibold mt-2">
+                            Stock: 0 {{ item.unit }} / Min: {{ item.min_quantity }} {{ item.unit }}
+                        </p>
+                        {% if item.vendor %}
+                        <p class="text-xs text-gray-500 mt-1">Vendor: {{ item.vendor.name }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full">URGENT</span>
+                </div>
+                <div class="mt-3 flex gap-2">
+                    <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+                        Create PO
+                    </button>
+                    <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium">
+                        Add Stock
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Low Stock Items -->
+    {% if low_stock_items %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-orange-500">
+        <h2 class="text-xl font-bold text-orange-600 mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Warning: Low Stock Items
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-semibold">Item</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold">Category</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">Current Stock</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">Min Required</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">To Order</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold">Vendor</th>
+                        <th class="px-4 py-3 text-center text-sm font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in low_stock_items %}
+                    <tr class="border-t hover:bg-orange-50">
+                        <td class="px-4 py-3">
+                            <div class="font-semibold text-gray-900">{{ item.name }}</div>
+                            <div class="text-xs text-gray-500">{{ item.sku }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm">{{ item.category }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <span class="font-semibold text-orange-600">{{ item.current_quantity }} {{ item.unit }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm">{{ item.min_quantity }} {{ item.unit }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <span class="font-bold text-blue-600">
+                                {% widthratio item.min_quantity 1 2 %} {{ item.unit }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if item.vendor %}
+                                {{ item.vendor.name }}
+                            {% else %}
+                                <span class="text-gray-400">Not set</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button class="text-blue-600 hover:text-blue-800 font-medium text-sm mr-2">Create PO</button>
+                            <button class="text-green-600 hover:text-green-800 font-medium text-sm">Add Stock</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Alert Notifications -->
+    {% if alerts %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+            <svg class="w-6 h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            Alert Notifications
+        </h2>
+        <div class="space-y-3">
+            {% for alert in alerts %}
+            <div class="flex items-start justify-between p-4 rounded-lg
+                {% if alert.alert_type == 'out_of_stock' %}bg-red-50 border border-red-200
+                {% elif alert.alert_type == 'low_stock' %}bg-orange-50 border border-orange-200
+                {% elif alert.alert_type == 'expiring_soon' %}bg-yellow-50 border border-yellow-200
+                {% else %}bg-gray-50 border border-gray-200{% endif %}">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full
+                            {% if alert.alert_type == 'out_of_stock' %}bg-red-600 text-white
+                            {% elif alert.alert_type == 'low_stock' %}bg-orange-600 text-white
+                            {% elif alert.alert_type == 'expiring_soon' %}bg-yellow-600 text-white
+                            {% else %}bg-gray-600 text-white{% endif %}">
+                            {{ alert.get_alert_type_display }}
+                        </span>
+                        <span class="text-sm font-semibold text-gray-900">{{ alert.stock_item.name }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">{{ alert.message }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ alert.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <button class="text-blue-600 hover:text-blue-800 font-medium text-sm">Resolve</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- No Alerts State -->
+    {% if not out_of_stock_items and not low_stock_items and not alerts %}
+    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <svg class="w-20 h-20 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-2xl font-bold text-gray-900 mb-2">All Stock Levels Normal</h3>
+        <p class="text-gray-600 mb-4">No critical alerts or low stock items at this time</p>
+        <a href="{% url 'inventory:inventory_list' %}" class="text-blue-600 hover:underline font-medium">
+            View All Inventory Items →
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+local_settings.py
+db.sqlite3  
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Environment & Secrets
+.env
+.env.local
+.env.production
+*.env
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.sql
+
+# Security
+logs/
+*.key
+*.pem
+*.crt
+
+# Documentation (optional - remove if you want to track README.md)
+*.md

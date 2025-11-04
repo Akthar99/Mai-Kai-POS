@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard - Mai Kai POS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Smooth transitions for HTMX updates */
+    .htmx-swapping {
+        opacity: 0;
+        transition: opacity 200ms ease-out;
+    }
+    
+    .htmx-settling {
+        opacity: 1;
+        transition: opacity 200ms ease-in;
+    }
+    
+    /* Pulse animation for live indicator */
+    @keyframes pulse-slow {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+    
+    .pulse-slow {
+        animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Live Update Indicator -->
+<div class="mb-4 flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+    </div>
+    <div class="flex items-center gap-4">
+        <button onclick="refreshDashboard()" 
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+        </button>
+        <div class="flex items-center gap-2">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            <span class="text-sm font-medium text-gray-700">Live</span>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" 
+     id="stats-section"
+     hx-get="{% url 'core:dashboard' %}?section=stats"
+     hx-trigger="every 20s, refresh from:body"
+     hx-swap="innerHTML swap:200ms">
+    {% include 'core/partials/dashboard_stats.html' %}
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent Orders -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Recent Orders</h2>
+            <div class="flex items-center gap-2">
+                <div class="htmx-indicator">
+                    <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+                <span class="text-xs text-gray-500 pulse-slow">●</span>
+            </div>
+        </div>
+        <div id="orders-section"
+             hx-get="{% url 'core:dashboard' %}?section=recent_orders"
+             hx-trigger="every 20s, refresh from:body"
+             hx-swap="innerHTML swap:200ms"
+             hx-indicator=".htmx-indicator">
+            {% include 'core/partials/dashboard_recent_orders.html' %}
+        </div>
+    </div>
+    
+    <!-- Low Stock Alerts -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Low Stock Alerts</h2>
+            <div class="flex items-center gap-2">
+                <div class="htmx-indicator">
+                    <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+                <span class="text-xs text-gray-500 pulse-slow">●</span>
+            </div>
+        </div>
+        <div id="stock-section"
+             hx-get="{% url 'core:dashboard' %}?section=low_stock"
+             hx-trigger="every 20s, refresh from:body"
+             hx-swap="innerHTML swap:200ms"
+             hx-indicator=".htmx-indicator">
+            {% include 'core/partials/dashboard_low_stock.html' %}
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshDashboard() {
+    // Trigger refresh event on body that all sections listen for
+    htmx.trigger('body', 'refresh');
+    
+    // Show a brief success message
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refreshing...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+    }, 1000);
+}
+
+// Add transition classes for HTMX swaps
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.target) {
+        evt.detail.target.style.transition = 'opacity 200ms ease-out';
+        evt.detail.target.style.opacity = '0';
+    }
+});
+
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target) {
+        setTimeout(() => {
+            evt.detail.target.style.opacity = '1';
+        }, 50);
+    }
+});
+</script>
+{% endblock %}

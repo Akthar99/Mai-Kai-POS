@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Export Orders - Mai Kai POS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'reports:reports_home' %}" class="text-blue-600 hover:underline mb-2 inline-block">&larr; Back to Reports</a>
+    <h1 class="text-3xl font-bold mb-2">Export Orders to PDF</h1>
+    <p class="text-gray-600">Select the time period and export all orders to PDF</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Export Form -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold mb-6">Select Export Period</h2>
+            
+            <form id="exportForm" method="GET" action="{% url 'reports:export_orders_pdf' %}">
+                <div class="space-y-6">
+                    <!-- Quick Date Range Selection -->
+                    <div>
+                        <label class="block text-sm font-semibold mb-3">Quick Select Period</label>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <button type="button" onclick="setDateRange('today')" 
+                                    class="period-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                                <div class="font-semibold">Today</div>
+                                <div class="text-xs text-gray-600 mt-1" id="today-date"></div>
+                            </button>
+                            
+                            <button type="button" onclick="setDateRange('yesterday')" 
+                                    class="period-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                                <div class="font-semibold">Yesterday</div>
+                                <div class="text-xs text-gray-600 mt-1" id="yesterday-date"></div>
+                            </button>
+                            
+                            <button type="button" onclick="setDateRange('this_week')" 
+                                    class="period-btn px-4 py-3 border-2 border-blue-500 bg-blue-50 rounded-lg hover:border-blue-600 transition text-center active">
+                                <div class="font-semibold">This Week</div>
+                                <div class="text-xs text-gray-600 mt-1" id="this-week-date"></div>
+                            </button>
+                            
+                            <button type="button" onclick="setDateRange('last_week')" 
+                                    class="period-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                                <div class="font-semibold">Last Week</div>
+                                <div class="text-xs text-gray-600 mt-1" id="last-week-date"></div>
+                            </button>
+                            
+                            <button type="button" onclick="setDateRange('this_month')" 
+                                    class="period-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                                <div class="font-semibold">This Month</div>
+                                <div class="text-xs text-gray-600 mt-1" id="this-month-date"></div>
+                            </button>
+                            
+                            <button type="button" onclick="setDateRange('last_month')" 
+                                    class="period-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                                <div class="font-semibold">Last Month</div>
+                                <div class="text-xs text-gray-600 mt-1" id="last-month-date"></div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Date Range -->
+                    <div class="border-t pt-6">
+                        <label class="block text-sm font-semibold mb-3">Or Select Custom Date Range</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">From Date</label>
+                                <input type="date" 
+                                       id="start_date" 
+                                       name="start_date" 
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       onchange="setDateRange('custom')">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">To Date</label>
+                                <input type="date" 
+                                       id="end_date" 
+                                       name="end_date" 
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       onchange="setDateRange('custom')">
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="range" id="range_input" value="this_week">
+
+                    <!-- Export Button -->
+                    <div class="border-t pt-6">
+                        <button type="submit" 
+                                class="w-full bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-lg font-semibold">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Download PDF Report
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="lg:col-span-1">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md p-6 text-white mb-6">
+            <div class="flex items-center mb-4">
+                <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3 class="text-xl font-bold">PDF Export</h3>
+            </div>
+            <p class="text-blue-100 mb-4">The exported PDF will include:</p>
+            <ul class="space-y-2 text-sm text-blue-50">
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    All orders with dates and times
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Order details (table, waiter, items)
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Summary statistics
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Daily breakdown (for multi-day reports)
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Professional formatting
+                </li>
+            </ul>
+        </div>
+
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+            <div class="flex">
+                <svg class="w-5 h-5 text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-yellow-800">Note</p>
+                    <p class="text-xs text-yellow-700 mt-1">Large date ranges may take longer to generate. For best performance, export one week or month at a time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calculate and display date ranges
+function updateDateLabels() {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // This week
+    const thisWeekStart = new Date(today);
+    thisWeekStart.setDate(today.getDate() - today.getDay());
+    
+    // Last week
+    const lastWeekStart = new Date(today);
+    lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
+    const lastWeekEnd = new Date(lastWeekStart);
+    lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
+    
+    // This month
+    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    // Last month
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    
+    // Format dates
+    const formatDate = (date) => {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+    
+    document.getElementById('today-date').textContent = formatDate(today);
+    document.getElementById('yesterday-date').textContent = formatDate(yesterday);
+    document.getElementById('this-week-date').textContent = formatDate(thisWeekStart) + ' - ' + formatDate(today);
+    document.getElementById('last-week-date').textContent = formatDate(lastWeekStart) + ' - ' + formatDate(lastWeekEnd);
+    document.getElementById('this-month-date').textContent = formatDate(thisMonthStart) + ' - ' + formatDate(today);
+    document.getElementById('last-month-date').textContent = formatDate(lastMonth) + ' - ' + formatDate(lastMonthEnd);
+}
+
+function setDateRange(range) {
+    document.getElementById('range_input').value = range;
+    
+    // Update button styles
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-50', 'active');
+        btn.classList.add('border-gray-300');
+    });
+    
+    if (range !== 'custom') {
+        event.target.closest('.period-btn').classList.add('border-blue-500', 'bg-blue-50', 'active');
+        event.target.closest('.period-btn').classList.remove('border-gray-300');
+        // Clear custom dates
+        document.getElementById('start_date').value = '';
+        document.getElementById('end_date').value = '';
+    }
+}
+
+// Initialize on page load
+updateDateLabels();
+</script>
+{% endblock %}

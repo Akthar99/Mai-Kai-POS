@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Menu Management - Mai Kai POS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Menu Management</h1>
+            <p class="text-gray-600 mt-1">Manage your restaurant menu items</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'menu:category_list' %}" 
+               class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+                Manage Categories
+            </a>
+            <a href="{% url 'menu:menu_item_create' %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Menu Item
+            </a>
+        </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="bg-white rounded-lg shadow mb-6">
+        <div class="flex flex-wrap gap-2 p-4 border-b">
+            <button type="button" 
+                    onclick="setCategoryFilter('')"
+                    id="cat-btn-all"
+                    class="px-4 py-2 rounded-lg {% if not request.GET.category %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                All Items
+            </button>
+            {% for category in categories %}
+            <button type="button" 
+                    onclick="setCategoryFilter('{{ category.id }}')"
+                    id="cat-btn-{{ category.id }}"
+                    class="px-4 py-2 rounded-lg {% if request.GET.category == category.id|stringformat:'s' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                {{ category.name }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <form id="filterForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <input type="text" 
+                       id="searchInput"
+                       name="search"
+                       placeholder="Search menu items..." 
+                       value="{{ request.GET.search }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       hx-get="{% url 'menu:menu_list' %}" 
+                       hx-trigger="keyup changed delay:500ms" 
+                       hx-target="#menu-items"
+                       hx-include="#filterForm"
+                       hx-indicator="#loading">
+            </div>
+            <div>
+                <select id="statusFilter"
+                        name="status"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        hx-get="{% url 'menu:menu_list' %}" 
+                        hx-trigger="change"
+                        hx-target="#menu-items"
+                        hx-include="#filterForm"
+                        hx-indicator="#loading">
+                    <option value="">All Status</option>
+                    <option value="available" {% if request.GET.status == 'available' %}selected{% endif %}>Available</option>
+                    <option value="unavailable" {% if request.GET.status == 'unavailable' %}selected{% endif %}>Unavailable</option>
+                </select>
+            </div>
+            <div>
+                <select id="sortFilter"
+                        name="sort"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        hx-get="{% url 'menu:menu_list' %}" 
+                        hx-trigger="change"
+                        hx-target="#menu-items"
+                        hx-include="#filterForm"
+                        hx-indicator="#loading">
+                    <option value="name" {% if request.GET.sort == 'name' or not request.GET.sort %}selected{% endif %}>Sort by Name</option>
+                    <option value="price" {% if request.GET.sort == 'price' %}selected{% endif %}>Sort by Price</option>
+                    <option value="category" {% if request.GET.sort == 'category' %}selected{% endif %}>Sort by Category</option>
+                </select>
+            </div>
+            <input type="hidden" name="category" id="categoryFilter" value="{{ request.GET.category }}">
+        </form>
+    </div>
+    
+    <div id="loading" class="htmx-indicator text-center py-4">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- Menu Items Grid -->
+    <div id="menu-items" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for item in menu_items %}
+        <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+            <!-- Item Image -->
+            <div class="h-48 bg-gray-200 relative overflow-hidden">
+                {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                {% endif %}
+                
+                <!-- Reference Number Badge -->
+                <span class="absolute top-2 left-2 px-2 py-1 bg-gray-900 text-white text-xs font-bold rounded-md">
+                    #{{ item.reference_number }}
+                </span>
+                
+                <!-- Status Badge -->
+                {% if item.is_available %}
+                <span class="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
+                    Available
+                </span>
+                {% else %}
+                <span class="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
+                    Unavailable
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Item Details -->
+            <div class="p-4">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
+                    {% if item.is_vegetarian %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Veg</span>
+                    {% endif %}
+                </div>
+                
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ item.description|truncatewords:15 }}</p>
+                
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ item.category.name }}</span>
+                    <span class="text-lg font-bold text-blue-600">Rs. {{ item.price }}</span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-2">
+                    <a href="{% url 'menu:menu_item_detail' item.id %}" 
+                       class="flex-1 text-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                        View
+                    </a>
+                    <a href="{% url 'menu:menu_item_update' item.id %}" 
+                       class="flex-1 text-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
+                        Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12">
+            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No menu items found</h3>
+            <p class="text-gray-600 mb-4">Get started by adding your first menu item</p>
+            <a href="{% url 'menu:menu_item_create' %}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Menu Item
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="mt-8 flex justify-center">
+        <nav class="flex items-center gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
+            {% endif %}
+
+            <span class="px-4 py-2 bg-blue-600 text-white rounded-lg">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Last</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function setCategoryFilter(categoryId) {
+    // Update hidden input
+    const categoryInput = document.getElementById('categoryFilter');
+    categoryInput.value = categoryId;
+    
+    // Update button styles
+    const allButtons = document.querySelectorAll('[id^="cat-btn-"]');
+    allButtons.forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+    });
+    
+    // Highlight selected button
+    const selectedBtn = categoryId ? document.getElementById('cat-btn-' + categoryId) : document.getElementById('cat-btn-all');
+    if (selectedBtn) {
+        selectedBtn.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+        selectedBtn.classList.add('bg-blue-600', 'text-white');
+    }
+    
+    // Build URL with all parameters
+    const form = document.getElementById('filterForm');
+    const search = document.getElementById('searchInput').value;
+    const status = document.getElementById('statusFilter').value;
+    const sort = document.getElementById('sortFilter').value;
+    
+    let url = '{% url "menu:menu_list" %}?';
+    const params = [];
+    
+    if (categoryId) params.push('category=' + encodeURIComponent(categoryId));
+    if (search) params.push('search=' + encodeURIComponent(search));
+    if (status) params.push('status=' + encodeURIComponent(status));
+    if (sort) params.push('sort=' + encodeURIComponent(sort));
+    
+    url += params.join('&');
+    
+    // Trigger HTMX request
+    htmx.ajax('GET', url, {
+        target: '#menu-items',
+        swap: 'innerHTML'
+    });
+}
+</script>
+{% endblock %}
+

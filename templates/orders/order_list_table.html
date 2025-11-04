@@ -1,0 +1,68 @@
+<table class="w-full">
+    <thead class="bg-gray-50">
+        <tr>
+            <th class="px-4 py-3 text-left text-sm font-semibold">Order #</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold">Type</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold">Table</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold">Status</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold">Total</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold">Time</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr class="border-b hover:bg-gray-50">
+            <td class="px-4 py-3 font-semibold">{{ order.order_number }}</td>
+            <td class="px-4 py-3">{{ order.get_order_type_display }}</td>
+            <td class="px-4 py-3">{{ order.table.table_number|default:"-" }}</td>
+            <td class="px-4 py-3">
+                {% if order.status == 'pending' %}
+                <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                    {{ order.get_status_display }}
+                </span>
+                {% elif order.status == 'confirmed' %}
+                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                    {{ order.get_status_display }}
+                </span>
+                {% elif order.status == 'preparing' %}
+                <span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800">
+                    {{ order.get_status_display }}
+                </span>
+                {% elif order.status == 'ready' %}
+                <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
+                    {{ order.get_status_display }}
+                </span>
+                {% elif order.status == 'completed' %}
+                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                    {{ order.get_status_display }}
+                </span>
+                {% elif order.status == 'cancelled' %}
+                <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                    {{ order.get_status_display }}
+                </span>
+                {% else %}
+                <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                    {{ order.get_status_display }}
+                </span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 font-semibold">Rs.{{ order.total }}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">{{ order.created_at|timesince }} ago</td>
+            <td class="px-4 py-3">
+                <a href="{% url 'orders:order_detail' order.id %}" class="text-blue-600 hover:underline mr-2">View</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                {% if current_status == 'all' %}
+                    No orders found
+                {% else %}
+                    No {{ current_status }} orders found
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

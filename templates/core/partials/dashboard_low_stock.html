@@ -1,0 +1,33 @@
+{% load humanize %}
+
+<div class="overflow-auto" style="max-height: 400px;">
+    <div class="space-y-2">
+        {% for item in low_stock_items %}
+        <div class="flex items-center justify-between p-3 bg-red-50 rounded border-l-4 border-red-500 hover:bg-red-100 transition-colors">
+            <div class="flex-1">
+                <p class="font-semibold text-gray-900">{{ item.name }}</p>
+                <div class="flex items-center gap-4 mt-1">
+                    <p class="text-sm text-gray-600">Current: <span class="font-medium text-red-600">{{ item.current_quantity }} {{ item.get_unit_display }}</span></p>
+                    <p class="text-sm text-gray-500">Min: {{ item.min_quantity }} {{ item.get_unit_display }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-1 bg-red-600 text-white text-xs font-semibold rounded">
+                    LOW
+                </span>
+                <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">
+                    Reorder
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-8">
+            <svg class="w-16 h-16 mx-auto mb-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-gray-500 font-medium">All items are well stocked</p>
+            <p class="text-sm text-gray-400 mt-1">No items below minimum quantity</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>

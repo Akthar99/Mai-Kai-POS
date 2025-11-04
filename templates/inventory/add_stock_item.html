@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Stock Item - Mai Kai POS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-4xl">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="{% url 'inventory:inventory_list' %}" class="text-blue-600 hover:underline mb-2 inline-block">
+            ← Back to Inventory
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Add New Stock Item</h1>
+        <p class="text-gray-600 mt-1">Add a new item to your inventory</p>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form id="addItemForm" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="border-b pb-4">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
+                        <input type="text" 
+                               id="name" 
+                               name="name" 
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="e.g., Rice - Basmati">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Code) *</label>
+                        <input type="text" 
+                               id="sku" 
+                               name="sku" 
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="e.g., RICE001">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                        <input type="text" 
+                               id="category" 
+                               name="category" 
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="e.g., Raw Materials, Beverages, Supplies"
+                               list="categories">
+                        <datalist id="categories">
+                            <option value="Raw Materials">
+                            <option value="Beverages">
+                            <option value="Supplies">
+                            <option value="Spices">
+                            <option value="Vegetables">
+                            <option value="Dairy">
+                            <option value="Meat & Seafood">
+                        </datalist>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+                        <select id="unit" 
+                                name="unit" 
+                                required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Unit</option>
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="g">Gram (g)</option>
+                            <option value="l">Liter (l)</option>
+                            <option value="ml">Milliliter (ml)</option>
+                            <option value="pcs">Pieces (pcs)</option>
+                            <option value="box">Box</option>
+                            <option value="pack">Pack</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantity & Pricing -->
+            <div class="border-b pb-4">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Quantity & Pricing</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Current Quantity *</label>
+                        <input type="number" 
+                               id="current_quantity" 
+                               name="current_quantity" 
+                               step="0.01"
+                               min="0"
+                               value="0"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Quantity (Reorder Level) *</label>
+                        <input type="number" 
+                               id="min_quantity" 
+                               name="min_quantity" 
+                               step="0.01"
+                               min="0"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Unit Cost (Rs.) *</label>
+                        <input type="number" 
+                               id="unit_cost" 
+                               name="unit_cost" 
+                               step="0.01"
+                               min="0"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optional Information -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Optional Information</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
+                        <select id="vendor_id" 
+                                name="vendor_id" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">No Vendor</option>
+                            {% for vendor in vendors %}
+                            <option value="{{ vendor.id }}">{{ vendor.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Add vendors in Django Admin first</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Storage Location</label>
+                        <select id="location_id" 
+                                name="location_id" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">No Location</option>
+                            {% for location in locations %}
+                            <option value="{{ location.id }}">{{ location.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Add locations in Django Admin first</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Maximum Quantity (Optional)</label>
+                        <input type="number" 
+                               id="max_quantity" 
+                               name="max_quantity" 
+                               step="0.01"
+                               min="0"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-3 pt-4 border-t">
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Add Stock Item
+                </button>
+                <a href="{% url 'inventory:inventory_list' %}" 
+                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Help Box -->
+    <div class="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="font-semibold text-blue-900">Quick Tips</p>
+                <ul class="text-sm text-blue-800 mt-1 space-y-1">
+                    <li>• <strong>SKU</strong>: Use unique codes like RICE001, VEG-TOM-001 for easy identification</li>
+                    <li>• <strong>Min Quantity</strong>: Set reorder level to get alerts when stock is low</li>
+                    <li>• <strong>Unit Cost</strong>: Enter the price you pay per unit (not selling price)</li>
+                    <li>• Add <strong>Vendors</strong> and <strong>Locations</strong> from Django Admin at <a href="/admin/" class="underline">/admin/</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('addItemForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect form data
+    const formData = {
+        name: document.getElementById('name').value,
+        sku: document.getElementById('sku').value,
+        category: document.getElementById('category').value,
+        unit: document.getElementById('unit').value,
+        current_quantity: document.getElementById('current_quantity').value,
+        min_quantity: document.getElementById('min_quantity').value,
+        unit_cost: document.getElementById('unit_cost').value,
+        vendor_id: document.getElementById('vendor_id').value || null,
+        location_id: document.getElementById('location_id').value || null,
+        max_quantity: document.getElementById('max_quantity').value || null,
+    };
+    
+    // Submit via AJAX
+    fetch('{% url "inventory:add_stock_item" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Stock item added successfully!');
+            window.location.href = '{% url "inventory:inventory_list" %}';
+        } else {
+            alert('Error: ' + (data.error || 'Failed to add item'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add item. Please try again.');
+    });
+});
+</script>
+{% endblock %}

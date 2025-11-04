@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if item %}Edit{% else %}Add{% endif %} Menu Item - Mai Kai POS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-4xl">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="{% url 'menu:menu_list' %}" class="text-blue-600 hover:text-blue-700 flex items-center gap-2 mb-4">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Menu
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">
+            {% if item %}Edit Menu Item{% else %}Add New Menu Item{% endif %}
+        </h1>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Reference Number -->
+            <div>
+                <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-2">
+                    Reference Number <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="reference_number" 
+                       id="reference_number" 
+                       value="{% if item %}{{ item.reference_number }}{% elif form_data %}{{ form_data.reference_number }}{% endif %}"
+                       required
+                       maxlength="10"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="e.g., 001, 002, A01">
+                <p class="text-sm text-gray-500 mt-1">
+                    Unique reference number for quick order entry (max 10 characters)
+                </p>
+            </div>
+
+            <!-- Name -->
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Item Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="name" 
+                       id="name" 
+                       value="{% if item %}{{ item.name }}{% endif %}"
+                       required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="e.g., Chicken Fried Rice">
+            </div>
+
+            <!-- Category and Price -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+                        Category <span class="text-red-500">*</span>
+                    </label>
+                    <select name="category" 
+                            id="category" 
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Category</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if item and item.category.id == category.id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
+                        Price (Rs.) <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" 
+                           name="price" 
+                           id="price" 
+                           value="{% if item %}{{ item.price }}{% endif %}"
+                           step="0.01"
+                           min="0"
+                           required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="0.00">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                </label>
+                <textarea name="description" 
+                          id="description" 
+                          rows="4"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Describe the menu item...">{% if item %}{{ item.description }}{% endif %}</textarea>
+            </div>
+
+            <!-- Image Upload -->
+            <div>
+                <label for="image" class="block text-sm font-medium text-gray-700 mb-2">
+                    Item Image
+                </label>
+                {% if item and item.image %}
+                <div class="mb-4">
+                    <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-48 h-48 object-cover rounded-lg">
+                </div>
+                {% endif %}
+                <input type="file" 
+                       name="image" 
+                       id="image" 
+                       accept="image/*"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <p class="text-sm text-gray-500 mt-1">Recommended: 800x800px, max 5MB</p>
+            </div>
+
+            <!-- Checkboxes -->
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <input type="checkbox" 
+                           name="is_vegetarian" 
+                           id="is_vegetarian"
+                           {% if item and item.is_vegetarian %}checked{% endif %}
+                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="is_vegetarian" class="ml-2 text-sm font-medium text-gray-700">
+                        Vegetarian Item
+                    </label>
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" 
+                           name="is_available" 
+                           id="is_available"
+                           {% if not item or item.is_available %}checked{% endif %}
+                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="is_available" class="ml-2 text-sm font-medium text-gray-700">
+                        Available for Order
+                    </label>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 pt-4 border-t">
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">
+                    {% if item %}Update Item{% else %}Create Item{% endif %}
+                </button>
+                <a href="{% url 'menu:menu_list' %}" 
+                   class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition">
+                    Cancel
+                </a>
+                {% if item %}
+                <button type="button" 
+                        onclick="document.getElementById('deleteModal').classList.remove('hidden')"
+                        class="ml-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition">
+                    Delete Item
+                </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+{% if item %}
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Delete Menu Item?</h3>
+        <p class="text-gray-600 mb-6">
+            Are you sure you want to delete "{{ item.name }}"? This action cannot be undone.
+        </p>
+        <div class="flex gap-4">
+            <form method="post" action="{% url 'menu:menu_item_delete' item.id %}" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg">
+                    Yes, Delete
+                </button>
+            </form>
+            <button type="button" 
+                    onclick="document.getElementById('deleteModal').classList.add('hidden')"
+                    class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
