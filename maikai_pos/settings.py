@@ -4,7 +4,7 @@ Django settings for maikai_pos project.
 
 import os
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -15,7 +15,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
 
 # Application definition
 INSTALLED_APPS = [
@@ -152,12 +152,12 @@ CRISPY_TEMPLATE_PACK = "tailwind"
 AUTH_USER_MODEL = 'staff.User'
 
 # Business Settings
-BUSINESS_NAME = "Mai Kai Hikka Restaurant"
-BUSINESS_ADDRESS = "Beach Road, Hikkaduwa, Sri Lanka"
-BUSINESS_PHONE = "+94 XX XXX XXXX"
-BUSINESS_EMAIL = "info@maikai.lk"
-TAX_RATE = 0.10  # 10% tax
-SERVICE_CHARGE_RATE = 0.10  # 10% service charge
+BUSINESS_NAME = config('BUSINESS_NAME', default='Mai Kai Hikka Restaurant')
+BUSINESS_ADDRESS = config('BUSINESS_ADDRESS', default='Beach Road, Hikkaduwa, Sri Lanka')
+BUSINESS_PHONE = config('BUSINESS_PHONE', default='+94 XX XXX XXXX')
+BUSINESS_EMAIL = config('BUSINESS_EMAIL', default='info@maikai.lk')
+TAX_RATE = config('TAX_RATE', default=0.10, cast=float)
+SERVICE_CHARGE_RATE = config('SERVICE_CHARGE_RATE', default=0.10, cast=float)
 
 # Session Settings
 SESSION_COOKIE_AGE = 43200  # 12 hours
@@ -167,9 +167,9 @@ SESSION_COOKIE_SAMESITE = 'Strict'
 SESSION_COOKIE_NAME = 'maikai_sessionid'
 
 # CSRF Settings
-CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # Must be False for JavaScript to read the token
 CSRF_COOKIE_SAMESITE = 'Strict'
-CSRF_COOKIE_NAME = 'maikai_csrftoken'
+CSRF_COOKIE_NAME = 'csrftoken'  # Use default name for easier JavaScript access
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_AGE = 31449600  # 1 year
 

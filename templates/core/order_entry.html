@@ -173,7 +173,7 @@
                     <span class="font-semibold" id="subtotal">Rs. {{ order.subtotal|default:"0.00" }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-600">Service Charge (10%)</span>
+                    <span class="text-gray-600">Service Charge ({{ SERVICE_CHARGE_RATE_PERCENT }}%)</span>
                     <span class="font-semibold" id="service-charge">Rs. {{ order.service_charge|default:"0.00" }}</span>
                 </div>
                 <div class="flex justify-between text-lg font-bold pt-2 border-t">

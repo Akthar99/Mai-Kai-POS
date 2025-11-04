@@ -47,12 +47,12 @@
                     <span class="font-semibold">Rs. {{ order.subtotal }}</span>
                 </div>
                 <div class="flex justify-between text-gray-700">
-                    <span>Service Charge (10%)</span>
+                    <span>Service Charge ({{ SERVICE_CHARGE_RATE_PERCENT }}%)</span>
                     <span class="font-semibold">Rs. {{ order.service_charge }}</span>
                 </div>
                 {% if order.tax_amount > 0 %}
                 <div class="flex justify-between text-gray-700">
-                    <span>Tax (10%)</span>
+                    <span>Tax ({{ TAX_RATE_PERCENT }}%)</span>
                     <span class="font-semibold">Rs. {{ order.tax_amount }}</span>
                 </div>
                 {% endif %}

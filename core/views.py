@@ -8,6 +8,9 @@ from django.views.decorators.http import require_POST
 from datetime import timedelta
 from decimal import Decimal
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -180,8 +183,6 @@ def get_order_items(request, table_id):
 
 @login_required
 @require_POST
-@login_required
-@require_POST
 def create_order(request, table_id):
     """Create a new order for a table"""
     from tables.models import Table
@@ -189,6 +190,8 @@ def create_order(request, table_id):
     import random
     
     try:
+        logger.info(f"Creating order for table {table_id} by user {request.user}")
+        
         table = get_object_or_404(Table, id=table_id, is_active=True)
         
         # Check if table already has an active order
@@ -198,6 +201,7 @@ def create_order(request, table_id):
         ).first()
         
         if existing_order:
+            logger.info(f"Existing order found: {existing_order.order_number}")
             return JsonResponse({
                 'success': True,
                 'order_id': existing_order.id,
@@ -224,6 +228,8 @@ def create_order(request, table_id):
         table.occupied_since = timezone.now()
         table.save()
         
+        logger.info(f"Order created successfully: {order.order_number}")
+        
         return JsonResponse({
             'success': True,
             'order_id': order.id,
@@ -231,6 +237,7 @@ def create_order(request, table_id):
             'message': 'Order created successfully'
         })
     except Exception as e:
+        logger.error(f"Error creating order for table {table_id}: {str(e)}", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': str(e)

@@ -154,9 +154,12 @@
 </head>
 <body>
     <div class="header">
-        <div class="restaurant-name">MAI KAI RESTAURANT</div>
-        <div>Hikkaduwa, Sri Lanka</div>
-        <div>Tel: +94 XX XXX XXXX</div>
+        <div class="restaurant-name">{{ BUSINESS_NAME|upper }}</div>
+        <div>{{ BUSINESS_ADDRESS }}</div>
+        <div>Tel: {{ BUSINESS_PHONE }}</div>
+        {% if BUSINESS_EMAIL %}
+        <div>{{ BUSINESS_EMAIL }}</div>
+        {% endif %}
     </div>
     
     <div class="receipt-title">TAX INVOICE</div>
@@ -219,12 +222,12 @@
         </div>
         {% endif %}
         <div class="total-row">
-            <span>Service Charge (10%):</span>
+            <span>Service Charge ({{ SERVICE_CHARGE_RATE_PERCENT }}%):</span>
             <span>Rs. {{ order.service_charge }}</span>
         </div>
         {% if order.tax_amount > 0 %}
         <div class="total-row">
-            <span>Tax (10%):</span>
+            <span>Tax ({{ TAX_RATE_PERCENT }}%):</span>
             <span>Rs. {{ order.tax_amount }}</span>
         </div>
         {% endif %}
@@ -259,9 +262,11 @@
         <div style="margin: 5px 0;">
             Visit us again soon
         </div>
+        {% if BUSINESS_EMAIL %}
         <div style="margin: 10px 0; font-size: 10px;">
-            www.maikairestaurant.lk
+            {{ BUSINESS_EMAIL }}
         </div>
+        {% endif %}
         <div style="margin: 10px 0; font-size: 9px;">
             This is a computer generated receipt
         </div>
