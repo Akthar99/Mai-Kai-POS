@@ -1,0 +1,2 @@
+web: gunicorn maikai_pos.wsgi:application --log-file -
+release: python manage.py migrate --noinput
