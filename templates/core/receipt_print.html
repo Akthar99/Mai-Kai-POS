@@ -162,7 +162,7 @@
         {% endif %}
     </div>
     
-    <div class="receipt-title">TAX INVOICE</div>
+    <div class="receipt-title">INVOICE</div>
     
     <div class="order-info">
         <div>
@@ -225,12 +225,6 @@
             <span>Service Charge ({{ SERVICE_CHARGE_RATE_PERCENT }}%):</span>
             <span>Rs. {{ order.service_charge }}</span>
         </div>
-        {% if order.tax_amount > 0 %}
-        <div class="total-row">
-            <span>Tax ({{ TAX_RATE_PERCENT }}%):</span>
-            <span>Rs. {{ order.tax_amount }}</span>
-        </div>
-        {% endif %}
         
         <div class="total-row grand-total">
             <span>TOTAL:</span>

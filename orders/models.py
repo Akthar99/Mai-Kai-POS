@@ -58,9 +58,9 @@ class Order(models.Model):
         from decimal import Decimal
         
         self.subtotal = sum(item.total_price for item in self.items.all())
-        self.tax_amount = self.subtotal * Decimal(str(settings.TAX_RATE))
+        self.tax_amount = Decimal('0')  # Tax removed - service charge only
         self.service_charge = self.subtotal * Decimal(str(settings.SERVICE_CHARGE_RATE))
-        self.total = self.subtotal - self.discount_amount + self.tax_amount + self.service_charge
+        self.total = self.subtotal - self.discount_amount + self.service_charge
         self.save()
 
 

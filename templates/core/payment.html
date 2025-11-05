@@ -50,12 +50,6 @@
                     <span>Service Charge ({{ SERVICE_CHARGE_RATE_PERCENT }}%)</span>
                     <span class="font-semibold">Rs. {{ order.service_charge }}</span>
                 </div>
-                {% if order.tax_amount > 0 %}
-                <div class="flex justify-between text-gray-700">
-                    <span>Tax ({{ TAX_RATE_PERCENT }}%)</span>
-                    <span class="font-semibold">Rs. {{ order.tax_amount }}</span>
-                </div>
-                {% endif %}
                 {% if order.discount_amount > 0 %}
                 <div class="flex justify-between text-red-600">
                     <span>Discount</span>
