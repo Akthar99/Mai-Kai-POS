@@ -19,12 +19,13 @@
                 </svg>
                 Back to Inventory
             </a>
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
+            <a href="{% url 'inventory:create_purchase_order' %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
                 New Purchase Order
-            </button>
+            </a>
         </div>
     </div>
 
@@ -158,10 +159,13 @@
                         {{ po.items.count }} items
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                        <a href="{% url 'inventory:view_purchase_order' po.id %}" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
                         {% if po.status == 'draft' %}
-                        <button class="text-green-600 hover:text-green-900 mr-3">Edit</button>
-                        <button class="text-red-600 hover:text-red-900">Delete</button>
+                        <a href="{% url 'inventory:edit_purchase_order' po.id %}" class="text-green-600 hover:text-green-900 mr-3">Edit</a>
+                        <button onclick="sendPO({{ po.id }}, '{{ po.po_number }}')" class="text-purple-600 hover:text-purple-900 mr-3">Send</button>
+                        <button onclick="deletePO({{ po.id }}, '{{ po.po_number }}')" class="text-red-600 hover:text-red-900">Delete</button>
+                        {% elif po.status == 'sent' %}
+                        <button onclick="receivePO({{ po.id }}, '{{ po.po_number }}')" class="text-green-600 hover:text-green-900">Receive</button>
                         {% endif %}
                     </td>
                 </tr>
@@ -173,12 +177,12 @@
                         </svg>
                         <h3 class="text-lg font-medium text-gray-900 mb-2">No Purchase Orders Found</h3>
                         <p class="text-gray-600 mb-4">Get started by creating your first purchase order</p>
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2">
+                        <a href="{% url 'inventory:create_purchase_order' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
                             Create Purchase Order
-                        </button>
+                        </a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -202,4 +206,112 @@
         </div>
     </div>
 </div>
+
+<script>
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Send Purchase Order
+function sendPO(poId, poNumber) {
+    if (!confirm(`Send Purchase Order ${poNumber} to vendor?`)) {
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`/inventory/purchase-orders/${poId}/send/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to send purchase order');
+    });
+}
+
+// Receive Purchase Order
+function receivePO(poId, poNumber) {
+    if (!confirm(`Mark Purchase Order ${poNumber} as received and update stock?`)) {
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`/inventory/purchase-orders/${poId}/receive/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to receive purchase order');
+    });
+}
+
+// Delete Purchase Order
+function deletePO(poId, poNumber) {
+    if (!confirm(`Are you sure you want to delete Purchase Order ${poNumber}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`/inventory/purchase-orders/${poId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete purchase order');
+    });
+}
+</script>
 {% endblock %}

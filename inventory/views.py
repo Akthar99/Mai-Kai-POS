@@ -206,3 +206,385 @@ def update_stock(request, item_id):
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+@login_required
+def create_purchase_order(request):
+    """Create new purchase order"""
+    from .models import PurchaseOrder, PurchaseOrderItem, Vendor, StockItem
+    from datetime import datetime, timedelta
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Generate PO number
+            from django.utils import timezone
+            po_count = PurchaseOrder.objects.filter(order_date__year=timezone.now().year).count()
+            po_number = f"PO-{timezone.now().year}-{str(po_count + 1).zfill(4)}"
+            
+            # Create purchase order
+            po = PurchaseOrder.objects.create(
+                po_number=po_number,
+                vendor_id=data['vendor_id'],
+                expected_delivery=data['expected_delivery'],
+                notes=data.get('notes', ''),
+                created_by=request.user,
+                status='draft'
+            )
+            
+            # Add items
+            subtotal = Decimal('0')
+            for item_data in data['items']:
+                quantity = Decimal(item_data['quantity'])
+                unit_cost = Decimal(item_data['unit_cost'])
+                total_cost = quantity * unit_cost
+                
+                PurchaseOrderItem.objects.create(
+                    purchase_order=po,
+                    stock_item_id=item_data['stock_item_id'],
+                    quantity=quantity,
+                    unit_cost=unit_cost,
+                    total_cost=total_cost
+                )
+                
+                subtotal += total_cost
+            
+            # Calculate totals
+            tax_rate = Decimal(data.get('tax_rate', '0.10'))  # Default 10%
+            po.subtotal = subtotal
+            po.tax_amount = subtotal * tax_rate
+            po.total_amount = po.subtotal + po.tax_amount
+            po.save()
+            
+            messages.success(request, f'Purchase Order {po.po_number} created successfully')
+            return JsonResponse({
+                'success': True,
+                'message': f'Purchase Order {po.po_number} created',
+                'po_id': po.id,
+                'po_number': po.po_number
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    # GET request - show form
+    vendors = Vendor.objects.filter(is_active=True)
+    stock_items = StockItem.objects.all().order_by('name')
+    
+    context = {
+        'vendors': vendors,
+        'stock_items': stock_items,
+    }
+    
+    return render(request, 'inventory/create_purchase_order.html', context)
+
+
+@login_required
+def view_purchase_order(request, po_id):
+    """View purchase order details"""
+    from .models import PurchaseOrder
+    
+    po = get_object_or_404(PurchaseOrder.objects.select_related('vendor', 'created_by').prefetch_related('items__stock_item'), id=po_id)
+    
+    context = {
+        'po': po,
+    }
+    
+    return render(request, 'inventory/view_purchase_order.html', context)
+
+
+@login_required
+def edit_purchase_order(request, po_id):
+    """Edit purchase order (only if status is draft)"""
+    from .models import PurchaseOrder, PurchaseOrderItem, Vendor, StockItem
+    
+    po = get_object_or_404(PurchaseOrder, id=po_id)
+    
+    if po.status != 'draft':
+        messages.error(request, 'Only draft purchase orders can be edited')
+        return redirect('inventory:purchase_orders')
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Update purchase order
+            po.vendor_id = data['vendor_id']
+            po.expected_delivery = data['expected_delivery']
+            po.notes = data.get('notes', '')
+            
+            # Delete existing items
+            po.items.all().delete()
+            
+            # Add new items
+            subtotal = Decimal('0')
+            for item_data in data['items']:
+                quantity = Decimal(item_data['quantity'])
+                unit_cost = Decimal(item_data['unit_cost'])
+                total_cost = quantity * unit_cost
+                
+                PurchaseOrderItem.objects.create(
+                    purchase_order=po,
+                    stock_item_id=item_data['stock_item_id'],
+                    quantity=quantity,
+                    unit_cost=unit_cost,
+                    total_cost=total_cost
+                )
+                
+                subtotal += total_cost
+            
+            # Calculate totals
+            tax_rate = Decimal(data.get('tax_rate', '0.10'))
+            po.subtotal = subtotal
+            po.tax_amount = subtotal * tax_rate
+            po.total_amount = po.subtotal + po.tax_amount
+            po.save()
+            
+            messages.success(request, f'Purchase Order {po.po_number} updated successfully')
+            return JsonResponse({
+                'success': True,
+                'message': f'Purchase Order {po.po_number} updated'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    # GET request
+    vendors = Vendor.objects.filter(is_active=True)
+    stock_items = StockItem.objects.all().order_by('name')
+    
+    context = {
+        'po': po,
+        'vendors': vendors,
+        'stock_items': stock_items,
+    }
+    
+    return render(request, 'inventory/edit_purchase_order.html', context)
+
+
+@login_required
+def delete_purchase_order(request, po_id):
+    """Delete purchase order (only if status is draft)"""
+    from .models import PurchaseOrder
+    
+    if request.method == 'POST':
+        try:
+            po = get_object_or_404(PurchaseOrder, id=po_id)
+            
+            if po.status != 'draft':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Only draft purchase orders can be deleted'
+                }, status=400)
+            
+            po_number = po.po_number
+            po.delete()
+            
+            messages.success(request, f'Purchase Order {po_number} deleted successfully')
+            return JsonResponse({
+                'success': True,
+                'message': f'Purchase Order {po_number} deleted'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+@login_required
+def send_purchase_order(request, po_id):
+    """Mark purchase order as sent"""
+    from .models import PurchaseOrder
+    
+    if request.method == 'POST':
+        try:
+            po = get_object_or_404(PurchaseOrder, id=po_id)
+            
+            if po.status != 'draft':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Only draft purchase orders can be sent'
+                }, status=400)
+            
+            po.status = 'sent'
+            po.save()
+            
+            messages.success(request, f'Purchase Order {po.po_number} marked as sent')
+            return JsonResponse({
+                'success': True,
+                'message': f'Purchase Order {po.po_number} sent'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+@login_required
+def receive_purchase_order(request, po_id):
+    """Receive purchase order and update stock"""
+    from .models import PurchaseOrder, StockMovement, StockItem
+    from django.utils import timezone
+    
+    if request.method == 'POST':
+        try:
+            po = get_object_or_404(PurchaseOrder.objects.prefetch_related('items__stock_item'), id=po_id)
+            
+            if po.status == 'received':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'This purchase order has already been received'
+                }, status=400)
+            
+            if po.status == 'cancelled':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Cancelled purchase orders cannot be received'
+                }, status=400)
+            
+            # Update stock for each item
+            for item in po.items.all():
+                stock_item = item.stock_item
+                
+                # Create stock movement
+                StockMovement.objects.create(
+                    stock_item=stock_item,
+                    movement_type='purchase',
+                    quantity=item.quantity,
+                    unit_cost=item.unit_cost,
+                    reference=f"PO #{po.po_number}",
+                    notes=f"Received from {po.vendor.name}",
+                    created_by=request.user
+                )
+                
+                # Update stock quantity
+                stock_item.current_quantity += item.quantity
+                stock_item.unit_cost = item.unit_cost  # Update unit cost
+                stock_item.save()
+                
+                # Mark as received in PO item
+                item.received_quantity = item.quantity
+                item.save()
+            
+            # Update PO status
+            po.status = 'received'
+            po.received_date = timezone.now().date()
+            po.save()
+            
+            messages.success(request, f'Purchase Order {po.po_number} received and stock updated')
+            return JsonResponse({
+                'success': True,
+                'message': f'Purchase Order {po.po_number} received'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+@login_required
+def vendors_list(request):
+    """List all vendors"""
+    from .models import Vendor
+    
+    vendors = Vendor.objects.all().order_by('-is_active', 'name')
+    
+    active_count = vendors.filter(is_active=True).count()
+    inactive_count = vendors.filter(is_active=False).count()
+    
+    context = {
+        'vendors': vendors,
+        'active_count': active_count,
+        'inactive_count': inactive_count,
+    }
+    
+    return render(request, 'inventory/vendors_list.html', context)
+
+
+@login_required
+def add_vendor(request):
+    """Add new vendor"""
+    from .models import Vendor
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            vendor = Vendor.objects.create(
+                name=data['name'],
+                contact_person=data.get('contact_person', ''),
+                phone=data['phone'],
+                email=data.get('email', ''),
+                address=data.get('address', ''),
+                is_active=data.get('is_active', True)
+            )
+            
+            messages.success(request, f'Vendor "{vendor.name}" added successfully')
+            return JsonResponse({
+                'success': True,
+                'message': f'Vendor "{vendor.name}" added',
+                'vendor_id': vendor.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+@login_required
+def edit_vendor(request, vendor_id):
+    """Edit vendor"""
+    from .models import Vendor
+    
+    vendor = get_object_or_404(Vendor, id=vendor_id)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            vendor.name = data['name']
+            vendor.contact_person = data.get('contact_person', '')
+            vendor.phone = data['phone']
+            vendor.email = data.get('email', '')
+            vendor.address = data.get('address', '')
+            vendor.is_active = data.get('is_active', True)
+            vendor.save()
+            
+            messages.success(request, f'Vendor "{vendor.name}" updated successfully')
+            return JsonResponse({
+                'success': True,
+                'message': f'Vendor "{vendor.name}" updated'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+@login_required
+def delete_vendor(request, vendor_id):
+    """Delete vendor"""
+    from .models import Vendor
+    
+    if request.method == 'POST':
+        try:
+            vendor = get_object_or_404(Vendor, id=vendor_id)
+            vendor_name = vendor.name
+            vendor.delete()
+            
+            messages.success(request, f'Vendor "{vendor_name}" deleted successfully')
+            return JsonResponse({
+                'success': True,
+                'message': f'Vendor "{vendor_name}" deleted'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)

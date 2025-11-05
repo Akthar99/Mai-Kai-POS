@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Purchase Order - Mai Kai POS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Create Purchase Order</h1>
+            <p class="text-gray-600 mt-1">Add a new purchase order for inventory items</p>
+        </div>
+        <a href="{% url 'inventory:purchase_orders' %}" 
+           class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Purchase Orders
+        </a>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <form id="poForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Vendor -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Vendor <span class="text-red-500">*</span>
+                    </label>
+                    <select id="vendor" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select Vendor</option>
+                        {% for vendor in vendors %}
+                        <option value="{{ vendor.id }}">{{ vendor.name }} - {{ vendor.phone }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Expected Delivery -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Expected Delivery Date <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" id="expectedDelivery" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                </label>
+                <textarea id="notes" rows="3" 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Additional notes for this purchase order..."></textarea>
+            </div>
+
+            <!-- Items Section -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">Order Items</h2>
+                    <button type="button" onclick="addItemRow()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add Item
+                    </button>
+                </div>
+
+                <!-- Items Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full border border-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Stock Item</th>
+                                <th class="px-4 py-2 text-right text-sm font-medium text-gray-700">Quantity</th>
+                                <th class="px-4 py-2 text-right text-sm font-medium text-gray-700">Unit Cost (Rs.)</th>
+                                <th class="px-4 py-2 text-right text-sm font-medium text-gray-700">Total (Rs.)</th>
+                                <th class="px-4 py-2 text-center text-sm font-medium text-gray-700">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody">
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    No items added yet. Click "Add Item" to start.
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-gray-50 border-t-2 border-gray-300">
+                            <tr>
+                                <td colspan="3" class="px-4 py-3 text-right font-semibold text-gray-700">Subtotal:</td>
+                                <td class="px-4 py-3 text-right font-semibold text-gray-900" id="subtotalDisplay">Rs. 0.00</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="px-4 py-3 text-right font-semibold text-gray-700">Tax (10%):</td>
+                                <td class="px-4 py-3 text-right font-semibold text-gray-900" id="taxDisplay">Rs. 0.00</td>
+                                <td></td>
+                            </tr>
+                            <tr class="border-t border-gray-300">
+                                <td colspan="3" class="px-4 py-3 text-right text-lg font-bold text-gray-900">Total:</td>
+                                <td class="px-4 py-3 text-right text-lg font-bold text-blue-600" id="totalDisplay">Rs. 0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end gap-3">
+                <a href="{% url 'inventory:purchase_orders' %}" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Create Purchase Order
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Stock items data
+const stockItems = [
+    {% for item in stock_items %}
+    {
+        id: {{ item.id }},
+        name: "{{ item.name|escapejs }}",
+        sku: "{{ item.sku }}",
+        unit: "{{ item.unit }}",
+        unit_cost: {{ item.unit_cost }}
+    },
+    {% endfor %}
+];
+
+let itemRowCounter = 0;
+
+// Add item row
+function addItemRow() {
+    const tbody = document.getElementById('itemsTableBody');
+    
+    // Remove "no items" message if it exists
+    if (tbody.querySelector('td[colspan="5"]')) {
+        tbody.innerHTML = '';
+    }
+    
+    const row = document.createElement('tr');
+    row.id = `item-row-${itemRowCounter}`;
+    row.innerHTML = `
+        <td class="px-4 py-2">
+            <select class="w-full px-2 py-1 border border-gray-300 rounded" 
+                    onchange="updateItemCost(${itemRowCounter})" 
+                    id="item-${itemRowCounter}" required>
+                <option value="">Select Item</option>
+                ${stockItems.map(item => 
+                    `<option value="${item.id}" data-cost="${item.unit_cost}">${item.name} (${item.sku}) - ${item.unit}</option>`
+                ).join('')}
+            </select>
+        </td>
+        <td class="px-4 py-2">
+            <input type="number" step="0.01" min="0.01" 
+                   class="w-full px-2 py-1 border border-gray-300 rounded text-right" 
+                   id="qty-${itemRowCounter}" 
+                   onchange="calculateRowTotal(${itemRowCounter})" required>
+        </td>
+        <td class="px-4 py-2">
+            <input type="number" step="0.01" min="0" 
+                   class="w-full px-2 py-1 border border-gray-300 rounded text-right" 
+                   id="cost-${itemRowCounter}" 
+                   onchange="calculateRowTotal(${itemRowCounter})" required>
+        </td>
+        <td class="px-4 py-2 text-right font-semibold" id="total-${itemRowCounter}">Rs. 0.00</td>
+        <td class="px-4 py-2 text-center">
+            <button type="button" onclick="removeItemRow(${itemRowCounter})" 
+                    class="text-red-600 hover:text-red-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    itemRowCounter++;
+}
+
+// Update item cost when item is selected
+function updateItemCost(rowId) {
+    const select = document.getElementById(`item-${rowId}`);
+    const costInput = document.getElementById(`cost-${rowId}`);
+    
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption.value) {
+        const cost = selectedOption.getAttribute('data-cost');
+        costInput.value = parseFloat(cost).toFixed(2);
+        calculateRowTotal(rowId);
+    }
+}
+
+// Calculate row total
+function calculateRowTotal(rowId) {
+    const qty = parseFloat(document.getElementById(`qty-${rowId}`).value) || 0;
+    const cost = parseFloat(document.getElementById(`cost-${rowId}`).value) || 0;
+    const total = qty * cost;
+    
+    document.getElementById(`total-${rowId}`).textContent = `Rs. ${total.toFixed(2)}`;
+    calculateGrandTotal();
+}
+
+// Remove item row
+function removeItemRow(rowId) {
+    const row = document.getElementById(`item-row-${rowId}`);
+    row.remove();
+    
+    const tbody = document.getElementById('itemsTableBody');
+    if (tbody.children.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                    No items added yet. Click "Add Item" to start.
+                </td>
+            </tr>
+        `;
+    }
+    
+    calculateGrandTotal();
+}
+
+// Calculate grand total
+function calculateGrandTotal() {
+    let subtotal = 0;
+    
+    for (let i = 0; i < itemRowCounter; i++) {
+        const row = document.getElementById(`item-row-${i}`);
+        if (row) {
+            const qty = parseFloat(document.getElementById(`qty-${i}`).value) || 0;
+            const cost = parseFloat(document.getElementById(`cost-${i}`).value) || 0;
+            subtotal += qty * cost;
+        }
+    }
+    
+    const tax = subtotal * 0.10; // 10% tax
+    const total = subtotal + tax;
+    
+    document.getElementById('subtotalDisplay').textContent = `Rs. ${subtotal.toFixed(2)}`;
+    document.getElementById('taxDisplay').textContent = `Rs. ${tax.toFixed(2)}`;
+    document.getElementById('totalDisplay').textContent = `Rs. ${total.toFixed(2)}`;
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Submit form
+document.getElementById('poForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const vendor_id = document.getElementById('vendor').value;
+    const expected_delivery = document.getElementById('expectedDelivery').value;
+    const notes = document.getElementById('notes').value;
+    
+    if (!vendor_id || !expected_delivery) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    // Collect items
+    const items = [];
+    for (let i = 0; i < itemRowCounter; i++) {
+        const row = document.getElementById(`item-row-${i}`);
+        if (row) {
+            const stock_item_id = document.getElementById(`item-${i}`).value;
+            const quantity = document.getElementById(`qty-${i}`).value;
+            const unit_cost = document.getElementById(`cost-${i}`).value;
+            
+            if (stock_item_id && quantity && unit_cost) {
+                items.push({
+                    stock_item_id: parseInt(stock_item_id),
+                    quantity: parseFloat(quantity),
+                    unit_cost: parseFloat(unit_cost)
+                });
+            }
+        }
+    }
+    
+    if (items.length === 0) {
+        alert('Please add at least one item to the purchase order');
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch('{% url "inventory:create_purchase_order" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            vendor_id: parseInt(vendor_id),
+            expected_delivery: expected_delivery,
+            notes: notes,
+            items: items
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.href = '{% url "inventory:purchase_orders" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create purchase order');
+    });
+});
+
+// Set minimum date to today
+document.getElementById('expectedDelivery').min = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

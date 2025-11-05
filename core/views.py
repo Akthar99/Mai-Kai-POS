@@ -446,6 +446,84 @@ def cancel_order(request, table_id):
 
 
 @login_required
+@require_POST
+def change_table(request, table_id):
+    """Move order from current table to a new table"""
+    from tables.models import Table
+    from orders.models import Order
+    
+    try:
+        # Get current table and order
+        current_table = get_object_or_404(Table, id=table_id, is_active=True)
+        
+        order = Order.objects.filter(
+            table=current_table,
+            status__in=['pending', 'confirmed', 'preparing']
+        ).first()
+        
+        if not order:
+            return JsonResponse({
+                'success': False,
+                'error': 'No active order found on this table'
+            }, status=404)
+        
+        # Get new table ID from request
+        data = json.loads(request.body)
+        new_table_id = data.get('new_table_id')
+        
+        if not new_table_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'New table ID is required'
+            }, status=400)
+        
+        # Get new table
+        new_table = get_object_or_404(Table, id=new_table_id, is_active=True)
+        
+        # Check if new table is available
+        if new_table.status != 'available':
+            return JsonResponse({
+                'success': False,
+                'error': f'Table {new_table.table_number} is not available'
+            }, status=400)
+        
+        # Move order to new table
+        order.table = new_table
+        order.save()
+        
+        # Update old table status
+        current_table.status = 'available'
+        current_table.occupied_since = None
+        current_table.save()
+        
+        # Update new table status
+        new_table.status = 'occupied'
+        new_table.occupied_since = timezone.now()
+        new_table.save()
+        
+        logger.info(f'Order {order.order_number} moved from Table {current_table.table_number} to Table {new_table.table_number} by {request.user.username}')
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Order moved to Table {new_table.table_number}',
+            'new_table_number': new_table.table_number,
+            'new_table_id': new_table.id
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        logger.error(f'Error changing table: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+
+@login_required
 def print_kot(request, table_id):
     """Print Kitchen Order Ticket"""
     from tables.models import Table

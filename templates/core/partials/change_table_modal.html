@@ -1,0 +1,133 @@
+<!-- Change Table Modal -->
+<div id="changeTableModal" class="fixed inset-0 bg-black bg-opacity-50 z-50" style="display: none;">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Change Table</h2>
+            <p class="text-gray-600 mb-4">Select a new table to move this order to:</p>
+            
+            <div id="availableTablesGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-6">
+                <!-- Available tables will be loaded here -->
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="closeChangeTableModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get CSRF token from cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Change Table Functions
+function showChangeTableModal() {
+    // Fetch available tables
+    fetch('/sales/')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch sales page');
+            }
+            return response.text();
+        })
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const tableCards = doc.querySelectorAll('.table-card');
+            
+            const grid = document.getElementById('availableTablesGrid');
+            grid.innerHTML = '';
+            
+            let availableCount = 0;
+            
+            tableCards.forEach(card => {
+                const tableId = card.getAttribute('data-table-id');
+                const status = card.getAttribute('data-status');
+                
+                // Find the table number from the div with class text-2xl
+                const tableNumberElement = card.querySelector('.text-2xl.font-bold');
+                const tableNumber = tableNumberElement ? tableNumberElement.textContent.trim() : '';
+                
+                if (status === 'available' && tableId && tableNumber) {
+                    const tableBtn = document.createElement('button');
+                    tableBtn.className = 'bg-green-100 hover:bg-green-200 border-2 border-green-500 text-green-800 p-4 rounded-lg font-bold text-xl';
+                    tableBtn.textContent = tableNumber;
+                    tableBtn.onclick = () => changeToTable(tableId, tableNumber);
+                    grid.appendChild(tableBtn);
+                    availableCount++;
+                }
+            });
+            
+            if (availableCount === 0) {
+                grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">No available tables</p>';
+            }
+            
+            document.getElementById('changeTableModal').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error fetching tables:', error);
+            alert('Failed to load available tables');
+        });
+}
+
+function closeChangeTableModal() {
+    document.getElementById('changeTableModal').style.display = 'none';
+}
+
+function changeToTable(newTableId, newTableNumber) {
+    if (!confirm(`Move this order to ${newTableNumber}?`)) {
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`/sales/order/{{ table.id }}/change-table/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            new_table_id: newTableId
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Change table response:', data);
+        if (data.success) {
+            // Close modal
+            closeChangeTableModal();
+            // Show success message
+            alert(data.message);
+            // Redirect to the new table's order page
+            window.location.href = `/sales/order/${data.new_table_id}/`;
+        } else {
+            alert(data.error || 'Failed to change table');
+        }
+    })
+    .catch(error => {
+        console.error('Error changing table:', error);
+        alert('Failed to change table: ' + error.message);
+    });
+}
+</script>
