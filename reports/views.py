@@ -412,13 +412,13 @@ def export_orders_pdf(request):
     total_orders = orders.count()
     total_revenue = sum(order.total for order in orders)
     completed_orders = orders.filter(status='completed').count()
-    cancelled_orders = orders.filter(status='cancelled').count()
+    pending_orders = orders.exclude(status='completed').count()
     
     summary_data = [
         ['Summary Statistics', ''],
         ['Total Orders:', str(total_orders)],
         ['Completed Orders:', str(completed_orders)],
-        ['Cancelled Orders:', str(cancelled_orders)],
+        ['Pending Orders:', str(pending_orders)],
         ['Total Revenue:', f'Rs. {total_revenue:,.2f}'],
         ['Average Order Value:', f'Rs. {(total_revenue / total_orders if total_orders > 0 else 0):,.2f}'],
     ]

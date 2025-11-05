@@ -403,7 +403,7 @@ def remove_order_item(request, item_id):
 @login_required
 @require_POST
 def cancel_order(request, table_id):
-    """Cancel the current order for a table"""
+    """Cancel and delete the current order for a table"""
     from tables.models import Table
     from orders.models import Order
     
@@ -421,20 +421,24 @@ def cancel_order(request, table_id):
                 'error': 'No active order found'
             }, status=404)
         
-        order.status = 'cancelled'
-        order.save()
+        # Delete the order completely (including all order items)
+        order_number = order.order_number
+        order.delete()
         
         # Update table status
         table.status = 'available'
         table.occupied_since = None
         table.save()
         
+        logger.info(f'Order {order_number} deleted by {request.user.username}')
+        
         return JsonResponse({
             'success': True,
-            'message': 'Order cancelled successfully'
+            'message': 'Order cancelled and removed successfully'
         })
         
     except Exception as e:
+        logger.error(f'Error cancelling order: {str(e)}', exc_info=True)
         return JsonResponse({
             'success': False,
             'error': str(e)
